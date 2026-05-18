@@ -100,20 +100,10 @@ async def check_again_callback(client, callback_query):
             caption="ʙꜱ ʏʀ ᴀʙ ᴋʏᴀ ᴊᴀᴀɴ ʟᴇɢᴀ💋"
         )
 
-# --- THE ABSOLUTE EVENT LOOP FIX ---
-async def main():
-    # Pehle bot ko manually start karenge explicit async context me
-    print("🤖 Starting Telegram Bot...")
-    await bot.start()
-    print("🤖 Bot started successfully.")
-    
-    # Ab uvicorn ko isi same running event loop ke andar start karenge
-    config = uvicorn.Config(app, host="0.0.0.0", port=8000, loop="asyncio")
-    server = uvicorn.Server(config)
-    
-    print("🚀 Starting FastAPI Server...")
-    await server.serve()
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(bot.start())
+    print("🤖 Bot started in standard event loop...")
 
 if __name__ == "__main__":
-    # Python 3.11+ aur Python 3.14 ke liye safest way to run async main
-    asyncio.run(main())
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
