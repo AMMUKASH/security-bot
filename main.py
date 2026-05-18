@@ -3,12 +3,11 @@ from fastapi import FastAPI
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import UserNotParticipant
-import uvicorn
 
 # --- CONFIGURATION ---
 API_ID = 38138069        
 API_HASH = "2ed313ebcc45cbcf65d1fc736ec71681"  
-BOT_TOKEN = "8346782187:AAEjgCRs-wAE1fzV-zOqpjB_PaldyOCwDEc" # Updated Token
+BOT_TOKEN = "8346782187:AAEjgCRs-wAE1fzV-zOqpjB_PaldyOCwDEc"
 START_IMG = "https://files.catbox.moe/ko5i86.jpg"
 
 CHANNELS = [
@@ -29,6 +28,8 @@ CHANNELS = [
 # --------------------------------------------
 
 app = FastAPI()
+
+# Global Client setup bina immediate initialization ke
 bot = Client("insta_mms_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 @app.get("/")
@@ -87,10 +88,11 @@ async def check_again_callback(client, callback_query):
             pass
         await client.send_photo(chat_id=callback_query.message.chat.id, photo=START_IMG, caption="ʙꜱ ʏʀ ᴀʙ ᴋʏᴀ ᴊᴀᴀɴ ʟᴇɢᴀ💋")
 
+# Python 3.14 Loop compatibility fix using Uvicorn's native lifespan loop hook
 @app.on_event("startup")
 async def startup_event():
+    loop = asyncio.get_running_loop()
+    # Pyrogram ko force kar rahe hain isi current running loop ko consume karne ke liye
+    bot.loop = loop 
     asyncio.create_task(bot.start())
-    print("🤖 Bot started successfully in stable environment.")
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+    print("🤖 Bot successfully synchronized with ASGI event loop!")
