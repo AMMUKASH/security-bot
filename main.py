@@ -1,121 +1,115 @@
-import os
-import random
-import aiohttp
 import asyncio
-from PIL import Image
-from io import BytesIO
+from fastapi import FastAPI
 from pyrogram import Client, filters
-from keep_alive import keep_alive
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.errors import UserNotParticipant
+import uvicorn
 
-API_ID = 34135757
-API_HASH = "d3d5548fe0d98eb1fb793c2c37c9e5c8"
-BOT_TOKEN = "8442588313:AAHITlgOAQ6_kUqk9ShvC_KS04t-rNg-dmA"
+# --- CONFIGURATION (YOUR DATA INTEGRATED) ---
+API_ID = 38138069        
+API_HASH = "2ed313ebcc45cbcf65d1fc736ec71681"  
+BOT_TOKEN = "8469456367:AAHnPUxDa1246b3O4p0yHkM4CKkIfSsToW0" 
+START_IMG = "https://files.catbox.moe/ko5i86.jpg"
 
-START_IMG = "https://graph.org/file/465913059119da96c4113-ddfa7acbeed879d51c.jpg"
+# All your channels with stylish names and usernames extracted from links
+CHANNELS = [
+    {"name": "ɪɴᴅɪᴀɴ ᴍᴍꜱ💋", "username": "About_Genious"},
+    {"name": "ʀᴇᴀʟ ʜɪɴᴅɪ ᴍᴍꜱ💋", "username": "Tele_links_update"},
+    {"name": "ꜰᴏʀᴄᴇ ꜰᴜᴄᴋ💋", "username": "Seling_Proff"},
+    {"name": "ᴍᴏᴍ & ꜱᴏɴ💋💋", "username": "Genu_Bot_Support"},
+    {"name": "ᴄʜɪʟᴅ ꜱᴇx💋💋", "username": "Friend_Forevr"},
+    {"name": "ꜱᴛᴇᴩ ᴍᴏᴍ ꜱᴏɴ💋💋", "username": "SticrAura"},
+    {"name": "ꜱᴄʜᴏᴏʟ ɪɴᴅɪᴀɴ ɢɪʀʟ💋💋", "username": "Villain_Loves"},
+    {"name": "ɪɴᴅɪᴀɴ ᴅᴇꜱɪ ᴀᴜɴᴛʏ💋💋", "username": "Sexi_Aura"},
+    {"name": "ʙʜᴀʙʜɪ ʟᴏᴠᴇ💋💋", "username": "Usertag_update"},
+    {"name": "ᴊᴀᴩᴀɴᴇᴇꜱ ɢɪʀʟ💋💋💋", "username": "MoviesHub_Verse"},
+    {"name": "ʀᴇᴀʟ ᴍᴍꜱ ᴠɪʀᴀʟ💋💋", "username": "K8vin_Hub"},
+    {"name": "ᴠɪʀᴀʟ ᴠɪᴅᴇᴏꜱ💋💋💋", "username": "Animyedit"},
+    {"name": "ꜱᴜɴɴʏ ʟᴇᴏɴᴇ💋💋", "username": "ll_CEO_OF_YOO_ll"}
+]
+# --------------------------------------------
 
-OWNER = 8581811595
-LOG_GROUP = -1003867805165
+# FastAPI App Initialize
+app = FastAPI()
 
-app = Client("pfp_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Pyrogram Bot Initialize
+bot = Client("insta_mms_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# SEARCH CATEGORIES
-CATEGORIES = {
-    "boys": "boys pfp aesthetic",
-    "girls": "girls pfp aesthetic",
-    "anime": "anime girl boy pfp",
-    "couple": "couple aesthetic pfp",
-    "cute": "cute pfp aesthetic",
-    "dark": "dark black aesthetic pfp",
-}
+@app.get("/")
+def hello_world():
+    return {"status": "Bot is running 24/7", "username": "@Insta_mmmmmsss_bot"}
 
-# FETCH IMAGES
-async def get_images(q):
-    urls = []
-    search_url = f"https://lexica.art/api/v1/search?q={q}"
-    async with aiohttp.ClientSession() as s:
-        async with s.get(search_url) as r:
-            data = await r.json()
-            for i in data["images"]:
-                urls.append(i["src"])
-    return urls[:50]
+# --- BOT LOGIC ---
+async def check_user_joined(client, user_id):
+    not_joined = []
+    for channel in CHANNELS:
+        try:
+            await client.get_chat_member(channel["username"], user_id)
+        except UserNotParticipant:
+            not_joined.append(channel)
+        except Exception:
+            # Agar bot kisi channel me admin nahi hoga, toh check skip ho jayega
+            continue
+    return not_joined
 
-# CROP IMAGE 1:1
-def crop_square(img):
-    w, h = img.size
-    s = min(w, h)
-    left = (w - s) // 2
-    top = (h - s) // 2
-    return img.crop((left, top, left + s, top + s))
+@bot.on_message(filters.command("start") & filters.private)
+async def start_command(client, message):
+    user_id = message.from_user.id
+    not_joined_channels = await check_user_joined(client, user_id)
+    
+    if not_joined_channels:
+        buttons = []
+        # Har 2 channels ko ek line (row) me dikhane ke liye logic
+        row = []
+        for channel in not_joined_channels:
+            row.append(InlineKeyboardButton(text=channel['name'], url=f"https://t.me/{channel['username']}"))
+            if len(row) == 2:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
+            
+        # Try Again button sabse last me single line me
+        buttons.append([InlineKeyboardButton(text="🔄 Checked / Try Again", callback_data="check_again")])
+        
+        await message.reply_photo(
+            photo=START_IMG,
+            caption=(
+                "👋 **Welcome!**\n\n"
+                "Bot ko use karne ke liye aapko hamare sabhi channels ko join karna padega.\n"
+                "Neeche diye gaye sabhi buttons par click karke join karein 👇"
+            ),
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+    else:
+        await message.reply_photo(
+            photo=START_IMG,
+            caption=f"✨ **Welcome back!**\n\nAapne saare channels join kar liye hain. Ab aap bot use kar sakte hain!"
+        )
 
-# START COMMAND
-@app.on_message(filters.command("start"))
-async def start(_, m):
-    await m.reply_photo(
-        START_IMG,
-        caption=(
-            "✨ **ʀᴜᴍᴀ ᴀʟʟ ᴘꜰᴘ ʙᴏᴛ** ✨\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "👦 **Boys** | 👧 **Girls**\n"
-            "🎎 **Anime** | 💑 **Couple**\n"
-            "✨ **Cute** | 🌙 **Dark**\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "💜 **Type anything like:**\n"
-            "• boys pfp\n"
-            "• girls pfp\n"
-            "• anime pfp\n"
-            "• couple pfp\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "🔥 **50 HD Pics per request**\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "📢 **Update:** @radhesupport\n"
-            "🛠️ **Support Group:** https://t.me/+PKYLDIEYiTljMzMx\n"
-            "👑 **Owner:** @SweetRuma\n"
-            "🆔 **Owner UserID:** `8581811595`\n"
-            "🗂️ **Log Group:** `-1003867805165`\n"
-        ),
-    )
+@bot.on_callback_query(filters.regex("check_again"))
+async def check_again_callback(client, callback_query):
+    user_id = callback_query.from_user.id
+    not_joined_channels = await check_user_joined(client, user_id)
+    
+    if not_joined_channels:
+        await callback_query.answer(text="❌ Aapne abhi bhi saare channels join nahi kiye hain! Kripya sabhi ko join karein.", show_alert=True)
+    else:
+        await callback_query.answer("✅ Thank you! Verification successful.", show_alert=False)
+        await callback_query.edit_message_caption(
+            caption="✨ **Aapka swagat hai!**\n\nVerification safal rha. Ab aap bot ke saare features use kar sakte hain!"
+        )
 
-# AUTO DETECT MESSAGE & SEND PICS
-@app.on_message(filters.text & ~filters.command(["start"]))
-async def fetch(_, m):
-    q = m.text.lower()
-    key = None
+# --- SERVER & BOT LIFECYCLE ---
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(bot.start())
+    print("🤖 @Insta_mmmmmsss_bot started in background...")
 
-    for k in CATEGORIES:
-        if k in q:
-            key = k
+@app.on_event("shutdown")
+async def shutdown_event():
+    await bot.stop()
+    print("🤖 Bot stopped.")
 
-    if not key:
-        key = "girls"
-
-    await m.reply("🔍 Fetching **50 HD PFPs…** Please wait 🔥")
-
-    urls = await get_images(CATEGORIES[key])
-
-    # SEND IN 10x5 BATCHES
-    for i in range(0, 50, 10):
-        batch = urls[i:i+10]
-        media = []
-
-        for link in batch:
-            async with aiohttp.ClientSession() as s:
-                async with s.get(link) as r:
-                    img_bytes = await r.read()
-                    img = Image.open(BytesIO(img_bytes))
-                    img = crop_square(img)
-
-                    buf = BytesIO()
-                    buf.name = "pfp.jpg"
-                    img.save(buf, "JPEG")
-                    buf.seek(0)
-                    media.append(buf)
-
-        for p in media:
-            await m.reply_photo(p)
-
-    # LOGGING
-    await app.send_message(LOG_GROUP, f"User {m.from_user.id} requested → {q}")
-
-print("Bot Running...")
-keep_alive()
-app.run()
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
