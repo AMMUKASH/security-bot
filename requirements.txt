@@ -1,5 +1,4 @@
 pyrogram
 tgcrypto
-Pillow
-aiohttp
-Flask
+fastapi
+uvicorn
