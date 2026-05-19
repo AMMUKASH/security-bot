@@ -3,3 +3,4 @@ tgcrypto
 motor
 pymongo
 aiohttp
+nest_asyncio
