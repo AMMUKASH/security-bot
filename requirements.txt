@@ -4,3 +4,6 @@ motor
 pymongo
 aiohttp
 nest_asyncio
+pymongo[srv]
+dnspython
+
