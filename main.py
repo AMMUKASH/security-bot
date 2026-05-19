@@ -17,9 +17,11 @@ bot = Client(
     bot_token=Config.BOT_TOKEN
 )
 
-# --- CONFIG HARDCODED VALUES FOR LOGS & OWNER ---
+# --- CONFIG HARDCODED VALUES FOR LOGS, OWNER & LINKS ---
 LOG_GROUP_ID = -1003947649552
 OWNER_USERNAME = "CoderNova"
+UPDATE_CHANNEL_LINK = "https://t.me/Gc_help_update"
+SUPPORT_GROUP_LINK = "https://t.me/Genu_Bot_Support"
 
 # Bad words list for Anti Abuse Filter
 BAD_WORDS = ["bhenchod", "madarchod", "gand", "chutiya", "luda", "lavda", "bsdk", "harami", "randi", "sala"]
@@ -78,7 +80,7 @@ def get_action_buttons():
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("✨ ᴀᴅᴅ ᴍᴇ ✨", url=f"https://t.me/{Config.BOT_USERNAME}?startgroup=true"),
-            InlineKeyboardButton("📢 ᴜᴩᴅᴀᴛᴇ", url=f"https://t.me/{Config.UPDATE_CH}")
+            InlineKeyboardButton("📢 ᴜ_ᴅᴀᴛᴇ", url=UPDATE_CHANNEL_LINK)
         ]
     ])
 
@@ -89,14 +91,13 @@ async def handle_member_violation(client, message: Message, target_user, reason)
     
     if count >= 3:
         try:
-            # 3 Warns complete hone par 30 minutes (1800 seconds) ke liye mute
             await client.restrict_chat_member(
                 chat_id, 
                 target_user.id, 
                 permissions=ChatPermissions(can_send_messages=False),
                 until_date=int(asyncio.get_event_loop().time() + 1800)
             )
-            await db.reset_warns(chat_id, target_user.id) # Reset warns after mute action
+            await db.reset_warns(chat_id, target_user.id)
             mute_text = f"🤐 {target_user.mention} ko **3/3 Warnings** exceed karne par **30 Mins** ke liye mute kar diya gaya.\n\n⚠️ **Reason:** {reason}"
             await message.reply_text(mute_text, reply_markup=get_action_buttons())
             
@@ -115,10 +116,13 @@ async def handle_member_violation(client, message: Message, target_user, reason)
 
 @bot.on_message(filters.command("start"))
 async def start_cmd(client, message: Message):
-    if message.chat.type.value == "private":
-        await db.add_served_user(message.chat.id)
-    else:
-        await db.add_served_chat(message.chat.id)
+    try:
+        if message.chat.type.value == "private":
+            await db.add_served_user(message.chat.id)
+        else:
+            await db.add_served_chat(message.chat.id)
+    except Exception as e:
+        print(f"Database Tracking Error: {e}")
 
     text = (
         "╭────── • 𝐆𝐔𝐀𝐑𝐃𝐈𝐀𝐍 𝐏𝐑𝐎 • ──────╮\n"
@@ -131,33 +135,40 @@ async def start_cmd(client, message: Message):
         "│ 📝 **EDIT SECURITY** (Edited Link Ban)\n"
         "│ 🗑️ **MEDIA CLEANUP** (Media Strict Control)\n"
         "├──────────────────────────────┤\n"
-        f"│ 👤 **ᴅᴇᴠᴇʟᴏᴩᴇʀ:** @{OWNER_USERNAME}\n"
+        f"│ 👤 **ᴅᴇᴠᴇʟᴏ_ᴇʀ:** @{OWNER_USERNAME}\n"
         "╰──────────────────────────────╯"
     )
     buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("✨ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴩ ✨", url=f"https://t.me/{Config.BOT_USERNAME}?startgroup=true")],
+        [InlineKeyboardButton("✨ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜ_ organiser ✨", url=f"https://t.me/{Config.BOT_USERNAME}?startgroup=true")],
         [
-            InlineKeyboardButton("📢 sᴜᴩᴩᴏʀᴛ ᴄʜᴀɴɴᴇʟ", url=f"https://t.me/{Config.UPDATE_CH}"),
-            InlineKeyboardButton("👥 sᴜᴩᴩᴏʀᴛ ɢʀᴏᴜᴩ", url="https://t.me/GIRLS_FIGHTER_GROUP")
+            InlineKeyboardButton("📢 120+ ᴜ_ᴅᴀᴛᴇs", url=UPDATE_CHANNEL_LINK),
+            InlineKeyboardButton("👥 sᴜ__ᴏʀᴛ ɢʀᴏᴜ_ ", url=SUPPORT_GROUP_LINK)
         ],
-        [InlineKeyboardButton("🛠️ ʜᴇʟᴩ ᴍᴇɴᴜ", callback_data="help_menu")]
+        [InlineKeyboardButton("🛠️ ʜᴇʟ_ ᴍᴇɴᴜ", callback_data="help_menu")]
     ])
     try:
         await message.reply_photo(photo=Config.START_IMG, caption=text, reply_markup=buttons)
     except Exception:
         await message.reply_text(text, reply_markup=buttons)
 
+    # Log group alert
+    if LOG_GROUP_ID:
+        try:
+            log_text = f"🔔 **#START_TRIGGERED**\n\n👤 **ᴜsᴇʀ:** {message.from_user.mention}\n💬 **ᴄʜᴀᴛ:** {message.chat.title or 'Private'}"
+            await client.send_message(LOG_GROUP_ID, log_text)
+        except: pass
+
 @bot.on_callback_query(filters.regex("^help_menu$|^back_start$"))
 async def cb_handler(client, cb: CallbackQuery):
     if cb.data == "help_menu":
-        help_text = "🛠️ **GUARDIAN PRO - ADMIN CONTROL PANEL**\n\n• `/ban` | `/unban` - Ban/Unban Management\n• `/mute` | `/unmute` - Voice Mute Control\n• `/warn` | `/diswarn` - Warning System\n• `/approve` | `/disapprove` - Whitelist Users"
+        help_text = "🛠️ **GUARDIAN PRO - ADMIN CONTROL PANEL**\n\n• `/ban` | `/unban` - Ban Management\n• `/mute` | `/unmute` - Mute Control\n• `/warn` | `/diswarn` - Warning System\n• `/approve` | `/disapprove` - Whitelist Users"
         await cb.message.edit_caption(caption=help_text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ ʙᴀᴄᴋ", callback_data="back_start")]]))
     elif cb.data == "back_start":
         text = "╭────── • 𝐆𝐔𝐀𝐑𝐃𝐈𝐀𝐍 𝐏𝐑𝐎 • ──────╮\n│      ✨ **ADVANCED GROUP SECURITY** ✨      \n╰──────────────────────────────╯"
         buttons = InlineKeyboardMarkup([
-            [InlineKeyboardButton("✨ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴩ ✨", url=f"https://t.me/{Config.BOT_USERNAME}?startgroup=true")],
-            [InlineKeyboardButton("📢 sᴜᴩᴩᴏʀᴛ ᴄʜᴀɴɴᴇʟ", url=f"https://t.me/{Config.UPDATE_CH}"), InlineKeyboardButton("👥 sᴜᴩᴩᴏʀᴛ ɢʀᴏᴜᴩ", url="https://t.me/GIRLS_FIGHTER_GROUP")],
-            [InlineKeyboardButton("🛠️ ʜᴇʟᴩ ᴍᴇɴᴜ", callback_data="help_menu")]
+            [InlineKeyboardButton("✨ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜ_ organiser ✨", url=f"https://t.me/{Config.BOT_USERNAME}?startgroup=true")],
+            [InlineKeyboardButton("📢 120+ ᴜ_ᴅᴀᴛᴇs", url=UPDATE_CHANNEL_LINK), InlineKeyboardButton("👥 sᴜ__ᴏʀᴛ ɢʀᴏᴜ_ ", url=SUPPORT_GROUP_LINK)],
+            [InlineKeyboardButton("🛠️ ʜᴇʟ_ ᴍᴇɴᴜ", callback_data="help_menu")]
         ])
         await cb.message.edit_caption(caption=text, reply_markup=buttons)
 
@@ -179,12 +190,16 @@ async def advanced_broadcast(client, message: Message):
 
     status_msg = await message.reply_text("⚡ **ʙʀᴏᴀᴅᴄᴀsᴛ ɪɴɪᴛɪᴀʟɪᴢɪɴɢ...**")
     targets = []
-    if send_to_users or send_to_all:
-        users = await db.get_served_users()
-        targets.extend([{"id": u["user_id"]} for u in users])
-    if send_to_groups or send_to_all:
-        chats = await db.get_served_chats()
-        targets.extend([{"id": c["chat_id"]} for c in chats])
+    try:
+        if send_to_users or send_to_all:
+            users = await db.get_served_users()
+            targets.extend([{"id": u["user_id"]} for u in users])
+        if send_to_groups or send_to_all:
+            chats = await db.get_served_chats()
+            targets.extend([{"id": c["chat_id"]} for c in chats])
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Database error during broadcast: {e}")
+        return
 
     unique_targets = {t["id"]: t for t in targets}.values()
     success, failed = 0, 0
@@ -213,12 +228,14 @@ async def security_watcher(client, message: Message):
     
     user_id = message.from_user.id
     is_user_admin = await is_admin(message.chat, user_id)
-    is_user_approved = await db.is_approved(message.chat.id, user_id)
+    
+    try: is_user_approved = await db.is_approved(message.chat.id, user_id)
+    except: is_user_approved = False
     
     text_content = message.text or message.caption or ""
     has_link = bool(re.search(r"t\.me|http|www\.", text_content))
 
-    # 1. ANTI LINK SYSTEM (Owner, Admin, Members - Sabka delete hoga)
+    # 1. ANTI LINK SYSTEM
     if has_link:
         try: await message.delete()
         except: pass
@@ -226,7 +243,7 @@ async def security_watcher(client, message: Message):
             await handle_member_violation(client, message, message.from_user, "Anti Link Violation (Sent Forbidden Link)")
         return
 
-    # 2. MEDIA CLEANUP (Owner, Admin, Members - Sabka delete hoga)
+    # 2. MEDIA CLEANUP
     if message.photo or message.video or message.document or message.audio or message.voice or message.sticker:
         try: await message.delete()
         except: pass
@@ -238,19 +255,17 @@ async def security_watcher(client, message: Message):
     if is_user_admin or is_user_approved:
         return
 
-    # 3. BIO LINK PROTECTION (Members scan only)
+    # 3. BIO LINK PROTECTION
     try:
-        full_user_info = await client.get_chat_member(message.chat.id, user_id)
         user_bio = (await client.get_users(user_id)).bio or ""
         if re.search(r"t\.me|http|www\.", user_bio):
             try: await message.delete()
             except: pass
             await handle_member_violation(client, message, message.from_user, "Bio Link Violation (Links inside Telegram Profile Bio)")
             return
-    except:
-        pass
+    except: pass
 
-    # 4. ANTI ABUSE PROTECTION (A to Z word scan)
+    # 4. ANTI ABUSE PROTECTION
     for word in BAD_WORDS:
         if word in text_content.lower():
             try: await message.delete()
@@ -265,7 +280,7 @@ async def security_watcher(client, message: Message):
         await handle_member_violation(client, message, message.from_user, "Forward Control System (Forwards strictly Prohibited)")
         return
 
-# --- 5. EDIT SECURITY SYSTEM (Edited messages catch engine) ---
+# --- EDIT SECURITY SYSTEM ---
 @bot.on_edited_message(filters.group)
 async def edit_security_engine(client, message: Message):
     if not message.from_user: return
@@ -276,9 +291,9 @@ async def edit_security_engine(client, message: Message):
     if has_link:
         try: await message.delete()
         except: pass
-        
         is_user_admin = await is_admin(message.chat, message.from_user.id)
-        is_user_approved = await db.is_approved(message.chat.id, message.from_user.id)
+        try: is_user_approved = await db.is_approved(message.chat.id, message.from_user.id)
+        except: is_user_approved = False
         
         if not (is_user_admin or is_user_approved):
             await handle_member_violation(client, message, message.from_user, "Edit Security (Tried to bypass anti-link via message Editing)")
@@ -305,7 +320,8 @@ async def set_welcome_msg(client, message: Message):
 
 @bot.on_message(filters.new_chat_members & filters.group)
 async def welcome_action(client, message: Message):
-    await db.add_served_chat(message.chat.id)
+    try: await db.add_served_chat(message.chat.id)
+    except: pass
     w_data = await db.get_welcome(message.chat.id)
     if not w_data: return
     cnt = await client.get_chat_members_count(message.chat.id)
