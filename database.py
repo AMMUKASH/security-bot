@@ -2,7 +2,7 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import Config
 
-# Render par Event Loop and Socket conflict se bachne ke liye safe initialization
+# Render initialization clean pattern
 try:
     try:
         loop = asyncio.get_event_loop()
@@ -10,10 +10,9 @@ try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-    # io_loop pass karne se 'BaseSelectorEventLoop.sock_connect' never awaited waali warning/crash theek ho jaati hai
+    # Standard clean async parameters configuration
     client = AsyncIOMotorClient(
         Config.MONGO_URL,
-        io_loop=loop,
         serverSelectionTimeoutMS=5000,
         tlsAllowInvalidCertificates=True
     )
