@@ -1,12 +1,13 @@
 import asyncio
 import re
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPermissions
 from config import Config
 import database as db
 
-# Web server Setup Render ki port binding ke liye (Uptime)
+# --- WEB SERVER SETUP FOR RENDER PORT BINDING ---
 from aiohttp import web
+
 async def handle(request):
     return web.Response(text="Bot is Running and Alive 24/7!")
 
@@ -18,6 +19,7 @@ async def start_server():
     site = web.TCPSite(runner, '0.0.0.0', Config.PORT)
     await site.start()
 
+# --- INITIALIZE PYROGRAM CLIENT ---
 bot = Client(
     "GuardianProBot",
     api_id=Config.API_ID,
@@ -25,7 +27,9 @@ bot = Client(
     bot_token=Config.BOT_TOKEN
 )
 
-# Helper functions
+BAD_WORDS = ["abuse1", "abuse2", "slang3"] 
+
+# --- HELPER FUNCTIONS ---
 def parse_buttons(text):
     if not text: return None
     try:
@@ -44,7 +48,7 @@ async def is_admin(chat, user_id):
         return m.status.value in ["administrator", "owner"]
     except: return False
 
-# --- HANDLERS ---
+# --- COMMAND HANDLERS ---
 
 @bot.on_message(filters.command("start"))
 async def start_cmd(client, message: Message):
@@ -109,7 +113,6 @@ async def cb_handler(client, cb: CallbackQuery):
         )
         await cb.message.edit_caption(caption=help_text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_start")]]))
     elif cb.data == "back_start":
-        # Start message text format restore karein
         text = (
             "╭────── • 𝐆𝐔𝐀𝐑𝐃𝐈𝐀𝐍 𝐏𝐑𝐎 • ──────╮\n"
             "│      ✨ **ADVANCED GROUP SECURITY** ✨      \n"
@@ -160,7 +163,7 @@ async def admin_actions(client, message: Message):
         await client.ban_chat_member(message.chat.id, target.id)
         await message.reply_text(f"🛑 {target.mention} ko group se block (Ban) kar diya gaya.")
     elif cmd == "mute":
-        await client.restrict_chat_member(message.chat.id, target.id, permissions=chat_permissions(can_send_messages=False))
+        await client.restrict_chat_member(message.chat.id, target.id, permissions=ChatPermissions(can_send_messages=False))
         await message.reply_text(f"🔇 {target.mention} ko mute kar diya gaya hai.")
     elif cmd == "warn":
         count = await db.add_warn(message.chat.id, target.id)
@@ -196,7 +199,6 @@ async def admin_unactions(client, message: Message):
         await client.unban_chat_member(message.chat.id, target_id)
         await message.reply_text("✅ User group me wapas aa sakta hai (Unbanned).")
     elif cmd == "unmute":
-        from pyrogram.types import ChatPermissions
         await client.restrict_chat_member(message.chat.id, target_id, permissions=ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_other_messages=True, can_add_web_page_previews=True))
         await message.reply_text("🔊 User unmuted! Ab wo group me text bhej sakta hai.")
 
@@ -269,11 +271,22 @@ async def watcher(client, message: Message):
         try: await message.delete(); return
         except: pass
 
+# --- MODERN ASYNC LOOP EXECUTION ENGINE ---
 async def main():
+    # 1. Start web server for Render port check
     await start_server()
+    print("🌐 Web Server active on port configuration!")
+    
+    # 2. Start the pyrogram client session
     await bot.start()
-    print("Bot is successfully running online...")
-    await asyncio.Event().wait()
+    print("🤖 Guardian Pro Security Engine Started Successfully!")
+    
+    # 3. Dynamic Keep-Alive Loop instead of event loop collision
+    while True:
+        await asyncio.sleep(3600)
 
 if __name__ == "__main__":
-    asyncio.get_event_loop().run_until_complete(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        print("Bot deployment stopped safely.")
