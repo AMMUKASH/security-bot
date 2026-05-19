@@ -1,10 +1,5 @@
 import asyncio
 import re
-import nest_asyncio
-
-# Pyrogram Client execution framework se pehle load karna important hai
-nest_asyncio.apply()
-
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPermissions
 from config import Config
@@ -26,7 +21,6 @@ SUPPORT_GROUP_LINK = "https://t.me/Genu_Bot_Support"
 BOT_USERNAME = "Group_secu_bot"
 
 BAD_WORDS = ["bhenchod", "madarchod", "gand", "chutiya", "luda", "lavda", "bsdk", "harami", "randi", "sala"]
-NSFW_DRUG_KEYWORDS = ["nsfw", "18+", "porn", "xxx", "sex", "nude", "naked", "pussy", "dick", "drugs", "weed"]
 
 # --- RENDER WEB PORT SERVER SYSTEM ---
 async def handle(request):
@@ -267,7 +261,7 @@ async def security_and_filter_watcher(client, message: Message):
         for filter_obj in current_filters:
             if filter_obj["keyword"].lower() in text_content.lower():
                 await message.reply_text(filter_obj["reply_text"])
-                break  # Multi trigger avoid karne ke liye break paths
+                break  
     except Exception as fe:
         print(f"Filter Engine Exception: {fe}")
 
@@ -322,27 +316,11 @@ async def welcome_action(client, message: Message):
         try: await client.send_photo(chat_id=message.chat.id, photo=w_data["file_id"], caption=cap, reply_markup=markup)
         except: pass
 
-# --- BACKGROUND TASK SAFETY COROUTINE PIPELINE ---
-async def main():
-    await start_server()
-    print("🤖 STARTING BOT RUNTIME CLIENT...")
-    try:
-        await bot.start()
-        print("✅ GUARDIAN PRO SECURITY ENGINE INITIATED AND RESPONDING!")
-        # Loop safety blocking fix for Render system
-        while True:
-            await asyncio.sleep(3600)
-    except Exception as e:
-        print(f"❌ BOT START CRASHED WITHIN RUNTIME EVENT: {e}")
-
+# --- NATIVE PYROGRAM STARTER WRAPPER ---
 if __name__ == "__main__":
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-    try:
-        loop.run_until_complete(main())
-    except (KeyboardInterrupt, SystemExit):
-        print("Bot context deployment shut down securely.")
+    # Web server background task loop scheduler setup
+    loop = asyncio.get_event_loop()
+    loop.create_task(start_server())
+    
+    print("🤖 INITIATING NATIVE PYROGRAM CLIENT ENGINE...")
+    bot.run()
